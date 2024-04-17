@@ -6,6 +6,7 @@ from aiogram.fsm.context import FSMContext
 from my_token import TOKEN
 from aiogram.fsm.state import default_state, State, StatesGroup
 import scraper
+import manipulation_db
 
 storage = MemoryStorage()
 bot = Bot(token=TOKEN)
@@ -19,6 +20,11 @@ class FSMFillForm(StatesGroup):
 
 @dp.message(Command('start'), StateFilter(default_state))
 async def process_start_command(message: Message):
+
+    user_id = message.from_user.id
+    username = message.from_user.username
+    manipulation_db.add_user_to_db(user_id, username)
+
     await message.answer(
         text='Привет! Я бот, который может отслеживать цены на товары из различных оналйн магазинов.\n\nДля того, чтобы'
              ' начать отслеживать цену на товар, выбери в меню команду "Добавить ссылку на товар".\nЕсли ты захочешь '
