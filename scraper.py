@@ -1,10 +1,12 @@
+import re
 from urllib.parse import urlparse
 from selenium.common import WebDriverException, NoSuchWindowException, TimeoutException, StaleElementReferenceException, \
     NoSuchElementException
 from selenium.webdriver.common.by import By
-
+from selenium.webdriver.support.wait import WebDriverWait
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 from selenium import webdriver
+from test import TEST
 
 
 def website_recognition(url):
@@ -17,12 +19,12 @@ def website_recognition(url):
 
 
 def get_price(site_url, key):
-    global driver
+    global driver, price, name_product
 
     try:
         # options = webdriver.ChromeOptions()
         driver = webdriver.Chrome()
-        driver.implicitly_wait(15)
+        driver.implicitly_wait(10)
         driver.get(site_url)
     except TimeoutException:
         print('Время ожидания операции истекло.')
@@ -32,22 +34,39 @@ def get_price(site_url, key):
         print(f'Произошла непредвиденная ошибка: {e}')
 
     else:
-        print('пока все кул')
-        name_product = None
-        price = None
 
         try:
-            name_product = driver.find_element(By.TAG_NAME, 'h1')
-            print(name_product.text)
+            name_product = driver.find_element(By.TAG_NAME, 'h1').text.strip()
+            print(name_product)
         except NoSuchElementException:
             print('Элемент с тегом "h1" не найден на странице.')
         except Exception as e:
             print(f'Произошла непредвиденная ошибка: {e}')
 
+        price_elements = driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR[key])
+        if price_elements:
+            price = price_elements[0].text
+        else:
+            price_elements = driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD[key])
+            if price_elements:
+                price = price_elements[0].text
+            else:
+                print('Элемент с css-селекторами из базы данных на странице не найдены.')
+
+        price = re.sub('[\u00A0|\u2009]', '', price)
+        price = re.sub('[A-Za-zА-Яа-я:]+', '', price)
+        clean_price = re.sub('₽.*₽', '', price).strip()
+        # save_in_db(name_product, clean_price, url_product)
+        message(name_product, price, site_url)
+        print(f'Товар {name_product} с ценой {clean_price} и ссылкой {site_url} сохранен в базу данных.')
+
     finally:
         driver.quit()
 
-    return 0
+
+def message(name, price, url):
+    return f'Теперь вы отслеживаете товар: {name}\nЕго начальная цена: {price}\nСсылка: {url}'
 
 
-get_price('https://www.wildberries.ru/catalog/181047832/detail.aspx?targetUrl=MS&size=29908097', 'www.wildberries.ru')
+for url in TEST:
+    website_recognition(url)
