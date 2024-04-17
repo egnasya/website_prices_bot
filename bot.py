@@ -43,8 +43,9 @@ async def process_addlink_command(message: Message,  state: FSMContext):
 
 @dp.message(StateFilter(FSMFillForm.url_add))
 async def process_del_command(message: Message, state: FSMContext):
+    user_id = message.from_user.id
     await state.update_data(url_add=message.text)
-    result = await scraper.website_recognition(message.text)
+    result = await scraper.website_recognition(message.text, user_id)
     await message.answer(result)
 
 
