@@ -4,9 +4,10 @@ from selenium.common import NoSuchWindowException, TimeoutException, NoSuchEleme
 from selenium.webdriver.common.by import By
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 from selenium import webdriver
+import manipulation_db
 
 
-async def website_recognition(url):
+async def website_recognition(url, user_id):
     regex = re.compile(
         r'^(?:http|ftp)s?://'  # http:// или https://
         r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'  # домен...
@@ -19,13 +20,13 @@ async def website_recognition(url):
     else:
         domain_url = urlparse(url).netloc
         if domain_url in DOMAIN_SELECTOR:
-            result = await get_price(url, domain_url)
+            result = await get_price(url, domain_url, user_id)
             return result if result is not None else 'Не удалось получить данные по данному URL.'
         else:
             return 'Я пока не могу отслеживать цену с этого сайта :('
 
 
-async def get_price(site_url, key):
+async def get_price(site_url, key, user_id):
     global driver, price, name_product
 
     try:
@@ -62,7 +63,7 @@ async def get_price(site_url, key):
             price = re.sub('[\u00A0|\u2009]', '', price)
             price = re.sub('[A-Za-zА-Яа-я:]+', '', price)
             clean_price = re.sub('₽.*₽', '', price).strip()
-            # save_in_db(name_product, clean_price, url_product)
+            manipulation_db.add_or_update_product(user_id, site_url, name_product, clean_price)
             print(f'Товар {name_product} с ценой {clean_price} и ссылкой {site_url} сохранен в базу данных.')
             return f'Теперь вы отслеживаете товар: {name_product}\nЕго начальная цена: {price}\nСсылка: {site_url}'
         else:
