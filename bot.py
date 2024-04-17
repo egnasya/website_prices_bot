@@ -24,7 +24,8 @@ async def process_start_command(message: Message):
              ' начать отслеживать цену на товар, выбери в меню команду "Добавить ссылку на товар".\nЕсли ты захочешь '
              'прекраить отслеживание, то выбери в меню пункт "Перестать отслеживать товар".\nЕсли окажется, что в нашей'
              ' базе нет сайта, цену с которого ты хочешь отслеживать - выбери команду "Обратная связь" и напиши '
-             'название сайта.\n\nПриятного использования :)'
+             'название сайта. Также ты можешь написать любые свои пожелания, выбрав эту команду.'
+             '\n\nПриятного использования :)'
     )
 
 
@@ -37,7 +38,7 @@ async def process_addlink_command(message: Message,  state: FSMContext):
 @dp.message(StateFilter(FSMFillForm.url_add))
 async def process_del_command(message: Message, state: FSMContext):
     await state.update_data(url_add=message.text)
-    result = scraper.website_recognition(message.text)
+    result = await scraper.website_recognition(message.text)
     await message.answer(result)
 
 
