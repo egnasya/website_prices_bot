@@ -1,10 +1,10 @@
 import re
-from asyncio import to_thread
 from urllib.parse import urlparse
 import aiosqlite
-from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 from selenium.webdriver.common.by import By
 from seleniumwire import webdriver
+
+from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 import manipulation_db
 
 

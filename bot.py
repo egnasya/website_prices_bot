@@ -1,9 +1,8 @@
 import asyncio
 import threading
-from datetime import time
-
 from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
+
 from my_token import TOKEN
 import price_check
 from handlers import router
@@ -19,7 +18,7 @@ async def start_checking_price():
                 await my_bot.send_message(user_id, results[user_id])
             except Exception as e:
                 print(f"Не удалось отправить сообщение: {e}")
-        await asyncio.sleep(600)
+        await asyncio.sleep(1800)
 
 
 def run_event_loop():

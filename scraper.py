@@ -2,8 +2,9 @@ import re
 from urllib.parse import urlparse
 from selenium.common import NoSuchWindowException, TimeoutException, NoSuchElementException
 from selenium.webdriver.common.by import By
-from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 from selenium import webdriver
+
+from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 import manipulation_db
 
 
