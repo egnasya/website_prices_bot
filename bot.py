@@ -1,53 +1,48 @@
-from aiogram import types, Bot, Dispatcher, F
-from aiogram.filters import Command, StateFilter, CommandStart, state
+import asyncio
+import threading
+from datetime import time
+
+from aiogram import Bot, Dispatcher
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.types import Message
-from aiogram.fsm.context import FSMContext
 from my_token import TOKEN
-from aiogram.fsm.state import default_state, State, StatesGroup
-import scraper
-import manipulation_db
+import price_check
+from handlers import router
 
-storage = MemoryStorage()
-bot = Bot(token=TOKEN)
-dp = Dispatcher(storage=storage)
+my_bot = Bot(token=TOKEN)
 
 
-class FSMFillForm(StatesGroup):
-    url_add = State()
-    url_del = State()
+async def start_checking_price():
+    while True:
+        results = await price_check.check_and_update_prices()
+        for user_id in results:
+            try:
+                await my_bot.send_message(user_id, results[user_id])
+            except Exception as e:
+                print(f"Не удалось отправить сообщение: {e}")
+        await asyncio.sleep(600)
 
 
-@dp.message(Command('start'), StateFilter(default_state))
-async def process_start_command(message: Message):
-
-    user_id = message.from_user.id
-    username = message.from_user.username
-    manipulation_db.add_user_to_db(user_id, username)
-
-    await message.answer(
-        text='Привет! Я бот, который может отслеживать цены на товары из различных оналйн магазинов.\n\nДля того, чтобы'
-             ' начать отслеживать цену на товар, выбери в меню команду "Добавить ссылку на товар".\nЕсли ты захочешь '
-             'прекраить отслеживание, то выбери в меню пункт "Перестать отслеживать товар".\nЕсли окажется, что в нашей'
-             ' базе нет сайта, цену с которого ты хочешь отслеживать - выбери команду "Обратная связь" и напиши '
-             'название сайта. Также ты можешь написать любые свои пожелания, выбрав эту команду.'
-             '\n\nПриятного использования :)'
-    )
+def run_event_loop():
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(start_checking_price())
+    finally:
+        loop.close()
 
 
-@dp.message(Command('addlink'))
-async def process_addlink_command(message: Message,  state: FSMContext):
-    await message.answer('Отправьте ссылку на товар: ')
-    await state.set_state(FSMFillForm.url_add)
+thread = threading.Thread(target=run_event_loop)
+thread.start()
 
 
-@dp.message(StateFilter(FSMFillForm.url_add))
-async def process_del_command(message: Message, state: FSMContext):
-    user_id = message.from_user.id
-    await state.update_data(url_add=message.text)
-    result = await scraper.website_recognition(message.text, user_id)
-    await message.answer(result)
-
+async def main():
+    storage = MemoryStorage()
+    dp = Dispatcher(storage=storage)
+    dp.include_router(router)
+    await dp.start_polling(my_bot),
 
 if __name__ == '__main__':
-    dp.run_polling(bot)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        print('Бот выключен')
