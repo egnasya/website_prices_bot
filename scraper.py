@@ -15,13 +15,16 @@ async def website_recognition(url, user_id):
         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...или ip
         r'(?::\d+)?'  # необязательный порт
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
-    if not regex.match(url):
-        return 'Кажется, это не ссылка :('
+
+    if not regex.findall(url):
+        return 'Кажется, тут нет ссылки :('
     else:
         domain_url = urlparse(url).netloc
         if domain_url in DOMAIN_SELECTOR:
-            result = await get_price(url, domain_url, user_id)
-            return result if result is not None else 'Не удалось получить данные по данному URL.'
+            name_product, price, url = await get_price(url, domain_url, user_id)
+            while not price.isdigit():
+                name_product, price, url = await get_price(url, domain_url, user_id)
+            return f'Теперь вы отслеживаете товар: {name_product}\nЕго начальная цена: {price}\nСсылка: {url}'
         else:
             return 'Я пока не могу отслеживать цену с этого сайта :('
 
@@ -31,7 +34,7 @@ async def get_price(site_url, key, user_id):
 
     try:
         driver = webdriver.Chrome()
-        driver.implicitly_wait(15)
+        driver.implicitly_wait(3)
         driver.get(site_url)
     except TimeoutException:
         print('Время ожидания операции истекло.')
@@ -62,12 +65,15 @@ async def get_price(site_url, key, user_id):
         if price:
             price = re.sub('[\u00A0|\u2009]', '', price)
             price = re.sub('[A-Za-zА-Яа-я:]+', '', price)
-            clean_price = re.sub('₽.*₽', '', price).strip()
-            manipulation_db.add_or_update_product(user_id, site_url, name_product, clean_price)
+            price = re.sub('₽[0-9]+₽*', '', price).strip()
+            if price.endswith('₽'):
+                price = price[:-1]
+            clean_price = price.replace(' ', '')
+            await manipulation_db.add_or_update_product(user_id, site_url, name_product, clean_price)
             print(f'Товар {name_product} с ценой {clean_price} и ссылкой {site_url} сохранен в базу данных.')
-            return f'Теперь вы отслеживаете товар: {name_product}\nЕго начальная цена: {price}\nСсылка: {site_url}'
+            return name_product, clean_price, site_url
         else:
-            return 'Что-то пошло не так, попробуйте еще раз отправить ссылку.'
+            return name_product, 'error', site_url
 
     finally:
         driver.quit()
