@@ -1,14 +1,15 @@
 import asyncio
+import threading
 from datetime import datetime
-from aiogram import Router, types, F
+from aiogram import Router, types, F, Bot
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 import manipulation_db
+import price_check
 import scraper
-
 
 router = Router()
 
@@ -51,10 +52,12 @@ async def process_add_command(message: Message, state: FSMContext):
     else:
         await state.update_data(url_add=message.text)
         await message.answer('Это может занять некоторое время🥺')
+        message_text = ''
         try:
             message_text = await asyncio.wait_for(scraper.website_recognition(message.text, user_id), 30)
         except asyncio.TimeoutError:
             message_text = 'Извините, что-то пошло не так, попробуйте еще раз отправить ссылку.'
+            await message.answer(message_text)
             await state.set_state(Register.url_add)
         await message.answer(message_text)
         await state.set_state(None)
@@ -103,5 +106,21 @@ async def process_feedback_command(message: Message, state: FSMContext):
     await message.answer('Спасибо за обратную связь!')
     await state.set_state(None)
 
+
+async def some_handler(message: Message):
+    loop = asyncio.get_event_loop()
+    thread = threading.Thread(target=start_checking_price, args=(loop,))
+    thread.start()
+
+
+async def start_checking_price(loop):
+    while True:
+        results = await price_check.check_and_update_prices()
+        for user_id in results:
+            try:
+                asyncio.run_coroutine_threadsafe(my_bot.send_message(user_id, results[user_id]), loop)
+            except Exception as e:
+                print(f"Не удалось отправить сообщение: {e}")
+        await asyncio.sleep(1800)
 
 

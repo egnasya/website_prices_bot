@@ -1,8 +1,10 @@
 import re
 from urllib.parse import urlparse
 from selenium.common import NoSuchWindowException, TimeoutException, NoSuchElementException
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium import webdriver
+from webdriver_manager.chrome import ChromeDriverManager
 
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 import manipulation_db
@@ -34,7 +36,7 @@ async def get_price(site_url, key, user_id):
     global driver, price, name_product
 
     try:
-        driver = webdriver.Chrome()
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
         driver.implicitly_wait(3)
         driver.get(site_url)
     except TimeoutException:
@@ -70,7 +72,7 @@ async def get_price(site_url, key, user_id):
             if price.endswith('₽'):
                 price = price[:-1]
             clean_price = price.replace(' ', '')
-            await manipulation_db.add_or_update_product(user_id, site_url, name_product, clean_price)
+            await manipulation_db.add_or_update_product(user_id, site_url, name_product, clean_price, 1)
             print(f'Товар {name_product} с ценой {clean_price} и ссылкой {site_url} сохранен в базу данных.')
             return name_product, clean_price, site_url
         else:

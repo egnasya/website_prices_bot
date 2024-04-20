@@ -5,8 +5,7 @@ DOMAIN_SELECTOR = {
     'aliexpress.ru': 'div[class="HazeProductPrice_SnowPrice__mainS__1jbkl"]',
     'sl.aliexpress.ru': 'div[class="HazeProductPrice_SnowPrice__mainS__1jbkl"]',
     'pitergsm.ru': 'span[class="main-detail-price"]',
-    'www.citilink.ru': 'span[class="e1j9birj0 e106ikdt0 app-catalog-8hy98m e1gjr6xo0"]',
-    'megamarket.ru': 'span[class="sales-block-offer-price__price-final"]'
+    'www.citilink.ru': 'span[class="e1j9birj0 e106ikdt0 app-catalog-8hy98m e1gjr6xo0"]'
 }
 DOMAIN_SELECTOR_ADD = {
     'market.yandex.ru': 'h3[class="_3oild _6tyDq u1R1k sslMJ"]',
@@ -15,6 +14,15 @@ DOMAIN_SELECTOR_ADD = {
     'aliexpress.ru': 'div[class="HazeProductPrice_SnowPrice__mainS__1jbkl"]',
     'sl.aliexpress.ru': 'div[class="HazeProductPrice_SnowPrice__mainS__1jbkl"]',
     'pitergsm.ru': 'span[class="main-detail-price"]',
-    'www.citilink.ru': 'span[class="e1j9birj0 e106ikdt0 app-catalog-8hy98m e1gjr6xo0"]',
-    'megamarket.ru': 'span[class="sales-block-offer-price__price-final"]'
+    'www.citilink.ru': 'span[class="e1j9birj0 e106ikdt0 app-catalog-8hy98m e1gjr6xo0"]'
+}
+
+DOMAIN_SELECTOR_SOLD_OUT = {
+    'www.wildberries.ru': 'p[class="sold-out-product"]'
+    # 'market.yandex.ru': '',
+    # 'www.mvideo.ru': '',
+    # 'aliexpress.ru': '',
+    # 'sl.aliexpress.ru': '',
+    # 'pitergsm.ru': '',
+    # 'www.citilink.ru': ''
 }
