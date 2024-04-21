@@ -33,6 +33,15 @@ async def add_or_update_product(user_id, URL, product_name, current_price, avail
         ''', (user_id, URL))
         result = await cursor.fetchone()
 
+        if current_price is None or current_price == '':
+            print('Ошибка: Цена не определена или пуста')
+        else:
+            try:
+                current_price = int(current_price)
+            except ValueError:
+                print('Ошибка: текущая цена содержит недопустимые символы')
+                return
+
         if result is None:
             await cursor.execute('''
                 INSERT INTO products_users (user_id, URL, product_name, current_price, last_update, product_availability)

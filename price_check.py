@@ -1,3 +1,4 @@
+import asyncio
 import re
 from urllib.parse import urlparse
 import aiosqlite
@@ -49,25 +50,29 @@ async def check_and_update_prices():
 
 
 async def get_price(site_url, key, old_price):
-    global driver, price, name_product
-    driver = None
-    try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+    loop = asyncio.get_running_loop()
+    with webdriver.Chrome(service=Service(ChromeDriverManager().install())) as driver:
         driver.implicitly_wait(3)
-        driver.get(site_url)
-        if key in DOMAIN_SELECTOR_SOLD_OUT and driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR_SOLD_OUT[key]):
-            return old_price, 0
-        else:
-            price_elements = driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR[key])
+
+        try:
+            await loop.run_in_executor(None, driver.get, site_url)
+
+            sold_out_selector = DOMAIN_SELECTOR_SOLD_OUT.get(key)
+            if sold_out_selector:
+                sold_out_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, sold_out_selector)
+                if sold_out_elements:
+                    return old_price, 0
+
+            price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR.get(key, ''))
+            if not price_elements:
+                price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD.get(key, ''))
+
             if price_elements:
                 price = price_elements[0].text
             else:
-                price_elements = driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD[key])
-                if price_elements:
-                    price = price_elements[0].text
-                else:
-                    print('Элемент с css-селекторами из базы данных на странице не найдены.')
-                    return None, -1
+                print('Элемент с css-селекторами из базы данных на странице не найдены.')
+                return old_price, -1
+
             if price:
                 price = re.sub('[\u00A0|\u2009]', '', price)
                 price = re.sub('[A-Za-zА-Яа-я:]+', '', price)
@@ -78,10 +83,7 @@ async def get_price(site_url, key, old_price):
                 clean_price = price.replace(' ', '')
                 return clean_price, 1
             else:
-                return None, -1
-    except Exception as e:
-        print(f'Произошла непредвиденная ошибка: {e}')
-        return None, -1
-    finally:
-        if driver:
-            driver.quit()
+                return old_price, -1
+        except Exception as e:
+            print(f'Произошла непредвиденная ошибка: {e}')
+            return old_price, -1

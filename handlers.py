@@ -105,22 +105,3 @@ async def process_feedback_command(message: Message, state: FSMContext):
     file.close()
     await message.answer('Спасибо за обратную связь!')
     await state.set_state(None)
-
-
-async def some_handler(message: Message):
-    loop = asyncio.get_event_loop()
-    thread = threading.Thread(target=start_checking_price, args=(loop,))
-    thread.start()
-
-
-async def start_checking_price(loop):
-    while True:
-        results = await price_check.check_and_update_prices()
-        for user_id in results:
-            try:
-                asyncio.run_coroutine_threadsafe(my_bot.send_message(user_id, results[user_id]), loop)
-            except Exception as e:
-                print(f"Не удалось отправить сообщение: {e}")
-        await asyncio.sleep(1800)
-
-
