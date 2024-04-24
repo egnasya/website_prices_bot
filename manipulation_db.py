@@ -21,37 +21,43 @@ async def add_user_to_db(user_id, username):
         await conn.close()
 
 
-async def add_or_update_product(user_id, URL, product_name, current_price):
-
+async def add_or_update_product(user_id, URL, product_name, current_price, availability_new):
     async with aiosqlite.connect('users_products.db') as conn:
-        await conn.execute('BEGIN')
         cursor = await conn.cursor()
-
-        await cursor.execute('''CREATE TABLE IF NOT EXISTS products_users (
-                            user_id	INTEGER NOT NULL,
-                            URL	TEXT NOT NULL,
-                            product_name	TEXT NOT NULL,
-                            current_price	REAL NOT NULL,
-                            last_update	TEXT NOT NULL DEFAULT 'DATETIME(''now'')',
-                            FOREIGN KEY("user_id") REFERENCES "users"("user_id"))''')
 
         now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        await cursor.execute('SELECT current_price FROM products_users WHERE user_id =? AND URL =?', (user_id, URL))
+        await cursor.execute('''
+            SELECT current_price, product_availability FROM products_users
+            WHERE user_id = ? AND URL = ?
+        ''', (user_id, URL))
         result = await cursor.fetchone()
 
-        if result is None:
-            await cursor.execute('INSERT INTO products_users (user_id, URL, product_name, current_price, last_update) '
-                                 'VALUES (?, ?, ?, ?, ?)', (user_id, URL, product_name, current_price, now))
-            await conn.commit()
-            print('Добавлена новая запись.')
-        elif int(result[0]) != int(current_price):
-            await cursor.execute('UPDATE products_users SET current_price = ?, last_update = ? WHERE user_id = ? AND URL = ?',
-                                       (current_price, now, user_id, URL))
-            await conn.commit()
-            print('Цена продукта изменилась.', int(result[0]), current_price)
+        if current_price is None or current_price == '':
+            print('Ошибка: Цена не определена или пуста')
         else:
-            print('Обновление или добовление новой записи не требуется.')
+            try:
+                current_price = int(current_price)
+            except ValueError:
+                print('Ошибка: текущая цена содержит недопустимые символы')
+                return
+
+        if result is None:
+            await cursor.execute('''
+                INSERT INTO products_users (user_id, URL, product_name, current_price, last_update, product_availability)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (user_id, URL, product_name, current_price, now, availability_new))
+            print('Добавлена новая запись: ', product_name, ': ', current_price)
+        else:
+            current_price_db, availability_db = result
+            if int(current_price_db) != int(current_price) or availability_new != availability_db:
+                await cursor.execute('''
+                    UPDATE products_users
+                    SET current_price = ?, product_availability = ?, last_update = ?
+                    WHERE user_id = ? AND URL = ?
+                ''', (current_price, availability_new, now, user_id, URL))
+                print(f'Данные продукта {product_name} обновлены:', URL, '\nСтарая цена:',
+                      current_price_db, '\nНовая цена:', current_price, '\nНаличие:', availability_new)
 
         await conn.commit()
 

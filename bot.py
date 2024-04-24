@@ -1,48 +1,46 @@
 import asyncio
+import logging
 import threading
-from datetime import time
-
+from asyncio import get_event_loop
 from aiogram import Bot, Dispatcher
+
+from aiogram.client import bot
 from aiogram.fsm.storage.memory import MemoryStorage
-from my_token import TOKEN
+
 import price_check
+from my_token import TOKEN
 from handlers import router
-
-my_bot = Bot(token=TOKEN)
-
-
-async def start_checking_price():
-    while True:
-        results = await price_check.check_and_update_prices()
-        for user_id in results:
-            try:
-                await my_bot.send_message(user_id, results[user_id])
-            except Exception as e:
-                print(f"Не удалось отправить сообщение: {e}")
-        await asyncio.sleep(600)
-
-
-def run_event_loop():
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(start_checking_price())
-    finally:
-        loop.close()
-
-
-thread = threading.Thread(target=run_event_loop)
-thread.start()
 
 
 async def main():
-    storage = MemoryStorage()
-    dp = Dispatcher(storage=storage)
+    my_bot = Bot(token=TOKEN)
+    dp = Dispatcher(bot=my_bot)
     dp.include_router(router)
-    await dp.start_polling(my_bot),
+
+    async def start_checking_price(wait_for: int):
+        while True:
+            results = await price_check.check_and_update_prices()
+            for user_id, messages in results.items():
+                for message in messages:
+                    try:
+                        await my_bot.send_message(user_id, message)
+                    except Exception as e:
+                        print(f"Не удалось отправить сообщение: {e}")
+                print('-----------------------------------------------------------------------------------------------')
+            await asyncio.sleep(wait_for)
+
+    check_task = asyncio.create_task(start_checking_price(1800))
+
+    try:
+        await dp.start_polling(my_bot)
+    finally:
+        check_task.cancel()
+        try:
+            await check_task
+        except asyncio.CancelledError:
+            pass
+        await my_bot.close()
+
 
 if __name__ == '__main__':
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print('Бот выключен')
+    asyncio.run(main())
