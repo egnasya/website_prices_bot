@@ -42,26 +42,18 @@ async def get_price(site_url, key, user_id):
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-setuid-sandbox")
     chrome_options.add_argument("--headless=new")
-    chrome_options.add_argument('--disable-dev-shm-usage')  # Использование /dev/shm как хранилище
-    chrome_options.add_argument('--disable-gpu')  # Отключение GPU
-    chrome_options.add_argument('--disable-software-rasterizer')  # Отключение программного растеризатора
-    chrome_options.add_argument('--disable-extensions')
-    chrome_options.add_argument('--disable-in-process-stack-traces')
-    chrome_options.add_argument('--disable-logging')
-    chrome_options.add_argument('--log-level=3')
-    chrome_options.add_argument('--output=/dev/null')
-
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--window-size=1920,1080")
+    chrome_options.add_argument("--remote-debugging-port=9222")
     service = Service(executable_path='/home/nastya/website_prices_bot/chromedriver')
-    driver = None
 
     try:
         driver = webdriver.Chrome(service=service, options=chrome_options)
-        driver.implicitly_wait(3)
+        driver.implicitly_wait(10)  # Увеличиваем время ожидания для headless-режима
 
-        await loop.run_in_executor(None, driver.get, site_url)
-
-        # Явное ожидание загрузки заголовка страницы
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+        driver.get(site_url)
+        WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
 
         try:
             name_product = driver.find_element(By.TAG_NAME, 'h1').text.strip()
@@ -69,15 +61,17 @@ async def get_price(site_url, key, user_id):
             print('Элемент с тегом "h1" не найден на странице.')
             name_product = 'Unknown Product'
 
-        price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR.get(key))
+        price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR,
+                                                    DOMAIN_SELECTOR.get(key))
         if not price_elements:
-            price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD.get(key))
+            price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR,
+                                                        DOMAIN_SELECTOR_ADD.get(key))
 
         if price_elements:
             price = price_elements[0].text
         else:
             print('Элемент с css-селекторами из базы данных на странице не найдены.')
-            return 'Unknown Product', 'error', site_url
+            price = 'error'
 
         if price:
             price = re.sub('[\u00A0|\u2009]', '', price)
