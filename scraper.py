@@ -48,7 +48,7 @@ async def get_price(site_url, key, user_id):
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-setuid-sandbox")
         chrome_options.add_argument('--remote-debugging-pipe')
-        service = Service(executable_path='/home/nastya/chromedriver-linux64/chromedriver')
+        service = Service(executable_path='/home/nastya/website_prices_bot/chromedriver')
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.implicitly_wait(3)
         driver.get(site_url)
