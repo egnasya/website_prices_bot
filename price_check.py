@@ -59,8 +59,7 @@ async def get_price(site_url, key, old_price):
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-setuid-sandbox")
-    service = Service(executable_path='/home/nastya/chromedriver-linux64')
-    with webdriver.Chrome(executable_path=service, options=chrome_options) as driver:
+    with webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options) as driver:
         driver.implicitly_wait(3)
 
         try:
