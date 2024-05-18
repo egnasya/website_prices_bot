@@ -40,7 +40,10 @@ async def get_price(site_url, key, user_id):
 
     try:
         driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+<<<<<<< HEAD
 
+=======
+>>>>>>> e2a164cd7d6ea461f958ba77ba3bf8e9ab2b4dc0
         driver.implicitly_wait(3)
         driver.get(site_url)
     except TimeoutException:

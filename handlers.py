@@ -1,12 +1,18 @@
 import asyncio
+import threading
 from datetime import datetime
+<<<<<<< HEAD
 from aiogram import Router
+=======
+from aiogram import Router, types, F, Bot
+>>>>>>> e2a164cd7d6ea461f958ba77ba3bf8e9ab2b4dc0
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 import manipulation_db
+import price_check
 import scraper
 
 router = Router()
@@ -44,6 +50,7 @@ async def process_addlink_command(message: Message,  state: FSMContext):
         await message.answer("Вы уже добавили максимально допустимое количество товаров (5).")
         await state.set_state(None)
     else:
+<<<<<<< HEAD
         await message.answer('Отправьте ссылку на товар: ')
         await state.set_state(Register.url_add)
 
@@ -57,6 +64,17 @@ async def process_add_command(message: Message, state: FSMContext):
         message_text = await asyncio.wait_for(scraper.website_recognition(message.text, user_id), 30)
     except asyncio.TimeoutError:
         message_text = 'Извините, что-то пошло не так, попробуйте еще раз отправить ссылку.'
+=======
+        await state.update_data(url_add=message.text)
+        await message.answer('Это может занять некоторое время🥺')
+        message_text = ''
+        try:
+            message_text = await asyncio.wait_for(scraper.website_recognition(message.text, user_id), 30)
+        except asyncio.TimeoutError:
+            message_text = 'Извините, что-то пошло не так, попробуйте еще раз отправить ссылку.'
+            await message.answer(message_text)
+            await state.set_state(Register.url_add)
+>>>>>>> e2a164cd7d6ea461f958ba77ba3bf8e9ab2b4dc0
         await message.answer(message_text)
         await state.set_state(Register.url_add)
     await message.answer(message_text)
