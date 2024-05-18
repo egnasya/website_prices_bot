@@ -9,6 +9,8 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium import webdriver
+from datetime import datetime
+import os
 
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 import manipulation_db
@@ -46,6 +48,10 @@ async def get_price(site_url, key, user_id):
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--remote-debugging-port=9222")
+    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+    chrome_options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3")
+
     service = Service(executable_path='/home/nastya/website_prices_bot/chromedriver')
 
     try:
@@ -54,6 +60,23 @@ async def get_price(site_url, key, user_id):
 
         driver.get(site_url)
         WebDriverWait(driver, 20).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
+
+        # Сохранение скриншота и HTML-кода для отладки
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        screenshot_path = os.path.join('debug_screenshots', f'screenshot_{timestamp}.png')
+        html_path = os.path.join('debug_html', f'page_{timestamp}.html')
+
+        if not os.path.exists('debug_screenshots'):
+            os.makedirs('debug_screenshots')
+        if not os.path.exists('debug_html'):
+            os.makedirs('debug_html')
+
+        driver.save_screenshot(screenshot_path)
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(driver.page_source)
+
+        print(f'Screenshot saved to {screenshot_path}')
+        print(f'HTML saved to {html_path}')
 
         try:
             name_product = driver.find_element(By.TAG_NAME, 'h1').text.strip()
@@ -92,3 +115,4 @@ async def get_price(site_url, key, user_id):
     finally:
         if driver:
             driver.quit()
+
