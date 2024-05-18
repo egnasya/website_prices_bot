@@ -7,9 +7,14 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+from xvfbwrapper import Xvfb
 
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
 import manipulation_db
+
+
+vdisplay = Xvfb()
+vdisplay.start()
 
 
 async def website_recognition(text, user_id):
@@ -39,11 +44,10 @@ async def get_price(site_url, key, user_id):
     global driver, price, name_product
 
     try:
-        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
-<<<<<<< HEAD
-
-=======
->>>>>>> e2a164cd7d6ea461f958ba77ba3bf8e9ab2b4dc0
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-setuid-sandbox")
+        driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
         driver.implicitly_wait(3)
         driver.get(site_url)
     except TimeoutException:

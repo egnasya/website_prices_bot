@@ -6,9 +6,14 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from seleniumwire import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+from xvfbwrapper import Xvfb
 
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD, DOMAIN_SELECTOR_SOLD_OUT
 import manipulation_db
+
+
+vdisplay = Xvfb()
+vdisplay.start()
 
 
 async def check_and_update_prices():
@@ -51,7 +56,10 @@ async def check_and_update_prices():
 
 async def get_price(site_url, key, old_price):
     loop = asyncio.get_running_loop()
-    with webdriver.Chrome(service=Service(ChromeDriverManager().install())) as driver:
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.add_argument("--disable-setuid-sandbox")
+    with webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options) as driver:
         driver.implicitly_wait(3)
 
         try:
