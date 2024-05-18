@@ -31,7 +31,10 @@ async def website_recognition(text, user_id):
             domain_url = urlparse(url).netloc
             if domain_url in DOMAIN_SELECTOR:
                 name_product, price, url = await get_price(url, domain_url, user_id)
-                return f'Теперь вы отслеживаете товар: {name_product}\nЕго начальная цена: {price}\nСсылка: {url}'
+                if name_product == "Unknown Product" or price == "error":
+                    return 'Произошла ошибка, попробуйте еще раз'
+                else:
+                    return f'Теперь вы отслеживаете товар: {name_product}\nЕго начальная цена: {price}\nСсылка: {url}'
             else:
                 return 'Я пока не могу отслеживать цену с этого сайта :('
         except Exception as e:
