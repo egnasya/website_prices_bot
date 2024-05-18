@@ -49,8 +49,16 @@ async def get_price(site_url, key, user_id):
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-setuid-sandbox")
         chrome_options.add_argument('--remote-debugging-pipe')
-        chrome_options.add_argument("--headless")
-        #chrome_options.add_argument("user-agent='Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 YaBrowser/20.12.1.178 Yowser/2.5 Safari/537.36'")
+        chrome_options.add_argument("--headless=new")
+        chrome_options.add_argument('--disable-dev-shm-usage')  # Использование /dev/shm как хранилище
+        chrome_options.add_argument('--disable-gpu')  # Отключение GPU
+        chrome_options.add_argument('--disable-software-rasterizer')  # Отключение программного растеризатора
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--disable-extensions')
+        chrome_options.add_argument('--disable-in-process-stack-traces')
+        chrome_options.add_argument('--disable-logging')
+        chrome_options.add_argument('--log-level=3')
+        chrome_options.add_argument('--output=/dev/null')
         service = Service(executable_path='/home/nastya/website_prices_bot/chromedriver')
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.implicitly_wait(3)
