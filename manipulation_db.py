@@ -10,7 +10,8 @@ async def create_tables():
         await cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 user_id INTEGER PRIMARY KEY,
-                username TEXT
+                username TEXT, 
+                start_date TEXT
             )
         ''')
 
@@ -30,22 +31,26 @@ async def create_tables():
 
 
 async def add_user_to_db(user_id, username):
-
     async with aiosqlite.connect('users_products.db') as conn:
         cursor = await conn.cursor()
 
-        await cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                            user_id	INTEGER PRIMARY KEY,
-                            username	TEXT)''')
-        await cursor.execute('SELECT user_id, username FROM users WHERE user_id = ?', (user_id,))
-        if await cursor.fetchone() is None:
-            await cursor.execute('INSERT INTO users (user_id, username) VALUES (?, ?)', (user_id, username))
+        await cursor.execute('SELECT user_id, username, start_date FROM users WHERE user_id = ?', (user_id,))
+        existing_user = await cursor.fetchone()
+
+        if existing_user is None:
+            current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            await cursor.execute('INSERT INTO users (user_id, username, start_date) VALUES (?, ?, ?)', (user_id, username, current_date))
             await conn.commit()
             print('Пользователь добавлен.')
         else:
             print('Пользователь уже существует.')
+            if existing_user[2] is None:  # Если start_date еще не заполнена
+                current_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                await cursor.execute('UPDATE users SET start_date = ? WHERE user_id = ?', (current_date, user_id))
+                await conn.commit()
+                print('Дата начала использования ботом добавлена.')
 
-        await conn.close()
+        await cursor.close()
 
 
 async def add_or_update_product(user_id, URL, product_name, current_price, availability_new):
