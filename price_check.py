@@ -26,25 +26,25 @@ async def check_and_update_prices():
             if availability != old_availability or (new_price and int(new_price) != int(old_price)):
                 await manipulation_db.add_or_update_product(user_id, url, product_name, new_price, availability)
 
-                if availability == 0:
+                if availability == 0 and availability != old_availability:
                     notification_message = (f'Вашего товара {product_name} больше нет в наличии. Можете отписаться от '
-                                            f'отслеживания или подождать наличия (я уведомлю об этом).{url}')
-                elif availability == 1 and new_price:
+                                            f'отслеживания или подождать наличия (я уведомлю об этом).\n{url}')
+                elif availability == 1 and availability != old_availability and new_price:
                     if int(new_price) == int(old_price):
-                        notification_message = f'Ваш товар {product_name} снова в наличии! Цена не изменилась.{url}'
+                        notification_message = f'Ваш товар {product_name} снова в наличии! Цена не изменилась.\n{url}'
                     else:
-                        diff = int(old_price) - int(new_price)
+                        diff = int(new_price) - int(old_price)
                         notification_message = (f'Ваш товар {product_name} снова в наличии и цена изменилась!\n'
                                                 f'Новая цена: {new_price} ({diff}).\n{url}')
-                        print(int(old_price), '->', int(new_price))
                 elif new_price and int(new_price) != int(old_price):
-                    diff = int(old_price) - int(new_price)
+                    diff = int(new_price) - int(old_price)
                     notification_message = (f'Цена на ваш товар {product_name} изменилась!\nНовая цена: {new_price}'
                                             f' ({diff}).\n{url}')
-                    print(int(old_price), '->', int(new_price))
 
                 if notification_message:
-                    notifications[user_id] = notification_message
+                    if user_id not in notifications:
+                        notifications[user_id] = []
+                    notifications[user_id].append(notification_message)
 
     return notifications
 
@@ -63,15 +63,15 @@ async def get_price(site_url, key, old_price):
                 if sold_out_elements:
                     return old_price, 0
 
-            price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR.get(key, ''))
+            price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR.get(key))
             if not price_elements:
-                price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD.get(key, ''))
+                price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD.get(key))
 
             if price_elements:
                 price = price_elements[0].text
             else:
                 print('Элемент с css-селекторами из базы данных на странице не найдены.')
-                return old_price, -1
+                return old_price, 1
 
             if price:
                 price = re.sub('[\u00A0|\u2009]', '', price)
@@ -83,7 +83,7 @@ async def get_price(site_url, key, old_price):
                 clean_price = price.replace(' ', '')
                 return clean_price, 1
             else:
-                return old_price, -1
+                return old_price, 1
         except Exception as e:
             print(f'Произошла непредвиденная ошибка: {e}')
-            return old_price, -1
+            return old_price, 1

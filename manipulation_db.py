@@ -1,5 +1,32 @@
+import asyncio
 import aiosqlite
 from datetime import datetime
+
+
+async def create_tables():
+    async with aiosqlite.connect('users_products.db') as conn:
+        cursor = await conn.cursor()
+
+        await cursor.execute('''
+            CREATE TABLE IF NOT EXISTS users (
+                user_id INTEGER PRIMARY KEY,
+                username TEXT
+            )
+        ''')
+
+        await cursor.execute('''
+            CREATE TABLE IF NOT EXISTS products_users (
+                id INTEGER PRIMARY KEY,
+                user_id INTEGER,
+                URL TEXT,
+                product_name TEXT,
+                current_price INTEGER,
+                last_update TEXT,
+                product_availability INTEGER,
+                FOREIGN KEY(user_id) REFERENCES users(user_id)
+            )
+        ''')
+        await conn.commit()
 
 
 async def add_user_to_db(user_id, username):
@@ -9,7 +36,7 @@ async def add_user_to_db(user_id, username):
 
         await cursor.execute('''CREATE TABLE IF NOT EXISTS users (
                             user_id	INTEGER PRIMARY KEY,
-                            username	TEXT NOT NULL DEFAULT 'no_name')''')
+                            username	TEXT)''')
         await cursor.execute('SELECT user_id, username FROM users WHERE user_id = ?', (user_id,))
         if await cursor.fetchone() is None:
             await cursor.execute('INSERT INTO users (user_id, username) VALUES (?, ?)', (user_id, username))
@@ -47,7 +74,7 @@ async def add_or_update_product(user_id, URL, product_name, current_price, avail
                 INSERT INTO products_users (user_id, URL, product_name, current_price, last_update, product_availability)
                 VALUES (?, ?, ?, ?, ?, ?)
             ''', (user_id, URL, product_name, current_price, now, availability_new))
-            print('Добавлена новая запись.')
+            print('Добавлена новая запись: ', product_name, ': ', current_price)
         else:
             current_price_db, availability_db = result
             if int(current_price_db) != int(current_price) or availability_new != availability_db:
@@ -56,7 +83,8 @@ async def add_or_update_product(user_id, URL, product_name, current_price, avail
                     SET current_price = ?, product_availability = ?, last_update = ?
                     WHERE user_id = ? AND URL = ?
                 ''', (current_price, availability_new, now, user_id, URL))
-                print('Данные продукта обновлены.')
+                print(f'Данные продукта {product_name} обновлены:', URL, '\nСтарая цена:',
+                      current_price_db, '\nНовая цена:', current_price, '\nНаличие:', availability_new)
 
         await conn.commit()
 
@@ -82,3 +110,6 @@ async def remove_products(user_id, product_name):
                                 WHERE user_id = ? AND product_name = ?''', (user_id, product_name))
         await conn.commit()
         await conn.close()
+
+
+asyncio.run(create_tables())

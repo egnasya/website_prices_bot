@@ -1,14 +1,12 @@
 import asyncio
-import threading
 from datetime import datetime
-from aiogram import Router, types, F, Bot
+from aiogram import Router
 from aiogram.filters import CommandStart, Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import StatesGroup, State
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
 
 import manipulation_db
-import price_check
 import scraper
 
 router = Router()
@@ -24,6 +22,8 @@ async def process_start_command(message: Message):
 
     user_id = message.from_user.id
     username = message.from_user.username
+    if username is None:
+        username = 'unknown'
     await manipulation_db.add_user_to_db(user_id, username)
 
     await message.answer(
@@ -38,29 +38,29 @@ async def process_start_command(message: Message):
 
 @router.message(Command('addlink'))
 async def process_addlink_command(message: Message,  state: FSMContext):
-    await message.answer('Отправьте ссылку на товар: ')
-    await state.set_state(Register.url_add)
-
-
-@router.message(Register.url_add)
-async def process_add_command(message: Message, state: FSMContext):
     user_id = message.from_user.id
     current_products = await manipulation_db.tracking_products(user_id)
     if len(current_products) >= 5:
         await message.answer("Вы уже добавили максимально допустимое количество товаров (5).")
         await state.set_state(None)
     else:
-        await state.update_data(url_add=message.text)
-        await message.answer('Это может занять некоторое время🥺')
-        message_text = ''
-        try:
-            message_text = await asyncio.wait_for(scraper.website_recognition(message.text, user_id), 30)
-        except asyncio.TimeoutError:
-            message_text = 'Извините, что-то пошло не так, попробуйте еще раз отправить ссылку.'
-            await message.answer(message_text)
-            await state.set_state(Register.url_add)
+        await message.answer('Отправьте ссылку на товар: ')
+        await state.set_state(Register.url_add)
+
+
+@router.message(Register.url_add)
+async def process_add_command(message: Message, state: FSMContext):
+    user_id = message.from_user.id
+    await state.update_data(url_add=message.text)
+    await message.answer('Это может занять некоторое время🥺')
+    try:
+        message_text = await asyncio.wait_for(scraper.website_recognition(message.text, user_id), 30)
+    except asyncio.TimeoutError:
+        message_text = 'Извините, что-то пошло не так, попробуйте еще раз отправить ссылку.'
         await message.answer(message_text)
-        await state.set_state(None)
+        await state.set_state(Register.url_add)
+    await message.answer(message_text)
+    await state.set_state(None)
 
 
 @router.message(Command('remove'))

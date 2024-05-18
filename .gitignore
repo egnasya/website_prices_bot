@@ -1,5 +1,6 @@
 .idea/
 .venv
+.env
 
 my_token.py
 domains_selectors.py
