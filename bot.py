@@ -1,17 +1,6 @@
 import asyncio
-<<<<<<< HEAD
 from aiogram import Bot, Dispatcher
 
-=======
-import logging
-import threading
-from asyncio import get_event_loop
-from aiogram import Bot, Dispatcher
-
-from aiogram.client import bot
-from aiogram.fsm.storage.memory import MemoryStorage
-
->>>>>>> e2a164cd7d6ea461f958ba77ba3bf8e9ab2b4dc0
 import price_check
 from my_token import TOKEN
 from handlers import router
@@ -34,11 +23,7 @@ async def main():
                 print('-----------------------------------------------------------------------------------------------')
             await asyncio.sleep(wait_for)
 
-<<<<<<< HEAD
     check_task = asyncio.create_task(start_checking_price(5400))
-=======
-    check_task = asyncio.create_task(start_checking_price(1800))
->>>>>>> e2a164cd7d6ea461f958ba77ba3bf8e9ab2b4dc0
 
     try:
         await dp.start_polling(my_bot)
