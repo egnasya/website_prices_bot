@@ -6,7 +6,8 @@ from selenium.common import NoSuchWindowException, TimeoutException, NoSuchEleme
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from xvfbwrapper import Xvfb
 
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD
@@ -48,7 +49,8 @@ async def get_price(site_url, key, user_id):
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-setuid-sandbox")
         chrome_options.add_argument('--remote-debugging-pipe')
-        chrome_options.add_argument("user-agent='Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 YaBrowser/20.12.1.178 Yowser/2.5 Safari/537.36'")
+        chrome_options.add_argument("--headless")
+        #chrome_options.add_argument("user-agent='Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 YaBrowser/20.12.1.178 Yowser/2.5 Safari/537.36'")
         service = Service(executable_path='/home/nastya/website_prices_bot/chromedriver')
         driver = webdriver.Chrome(service=service, options=chrome_options)
         driver.implicitly_wait(3)
@@ -61,6 +63,7 @@ async def get_price(site_url, key, user_id):
         print(f'Произошла непредвиденная ошибка: {e}')
     else:
         try:
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.TAG_NAME, 'h1')))
             name_product = driver.find_element(By.TAG_NAME, 'h1').text.strip()
         except NoSuchElementException:
             print('Элемент с тегом "h1" не найден на странице.')
@@ -69,10 +72,12 @@ async def get_price(site_url, key, user_id):
 
         price = None
 
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DOMAIN_SELECTOR[key])))
         price_elements = driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR[key])
         if price_elements:
             price = price_elements[0].text
         else:
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD[key])))
             price_elements = driver.find_elements(By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD[key])
             if price_elements:
                 price = price_elements[0].text

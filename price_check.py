@@ -4,8 +4,9 @@ from urllib.parse import urlparse
 import aiosqlite
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.wait import WebDriverWait
 from seleniumwire import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support import expected_conditions as EC
 from xvfbwrapper import Xvfb
 
 from domains_selectors import DOMAIN_SELECTOR, DOMAIN_SELECTOR_ADD, DOMAIN_SELECTOR_SOLD_OUT
@@ -60,7 +61,8 @@ async def get_price(site_url, key, old_price):
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-setuid-sandbox")
     chrome_options.add_argument('--remote-debugging-pipe')
-    chrome_options.add_argument("user-agent='Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 YaBrowser/20.12.1.178 Yowser/2.5 Safari/537.36'")
+    chrome_options.add_argument("--headless")
+    #chrome_options.add_argument("user-agent='Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.88 YaBrowser/20.12.1.178 Yowser/2.5 Safari/537.36'")
     service = Service(executable_path='/home/nastya/website_prices_bot/chromedriver')
     with webdriver.Chrome(executable_path=service, options=chrome_options) as driver:
         driver.implicitly_wait(3)
@@ -70,12 +72,15 @@ async def get_price(site_url, key, old_price):
 
             sold_out_selector = DOMAIN_SELECTOR_SOLD_OUT.get(key)
             if sold_out_selector:
+                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, sold_out_selector)))
                 sold_out_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, sold_out_selector)
                 if sold_out_elements:
                     return old_price, 0
 
+            WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DOMAIN_SELECTOR[key])))
             price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR.get(key))
             if not price_elements:
+                WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD[key])))
                 price_elements = await loop.run_in_executor(None, driver.find_elements, By.CSS_SELECTOR, DOMAIN_SELECTOR_ADD.get(key))
 
             if price_elements:
